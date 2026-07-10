@@ -10,6 +10,7 @@ import { composioToolkitsOptions } from "@multica/core/composio";
 import { useFeatureEnabled } from "@multica/core/config";
 import { COMPOSIO_MCP_APPS_FLAG } from "@multica/core/feature-flags";
 import { useT } from "../../i18n";
+import { IntegrationSpaceBindings } from "./integration-space-bindings";
 
 // Integrations is the single home for third-party platform connections. Each
 // integration owns its description and install flow; adding another provider
@@ -30,6 +31,7 @@ export function IntegrationsTab() {
 
   return (
     <div className="space-y-10">
+      <IntegrationSpaceBindings />
       <section className="space-y-4">
         <h2 className="text-sm font-semibold">{t(($) => $.github.connection_title)}</h2>
         <GitHubTab />
