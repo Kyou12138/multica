@@ -23,18 +23,8 @@ const workspaceRef = vi.hoisted(() => ({
 const membersRef = vi.hoisted(() => ({
   current: [{ user_id: "user-1", role: "owner" as "owner" | "admin" | "member" }],
 }));
-const spacesRef = vi.hoisted(() => ({
-  current: [
-    { id: "space-1", name: "Default", is_default: true },
-    { id: "space-2", name: "Other", is_default: false },
-  ],
-}));
-
 vi.mock("@tanstack/react-query", () => ({
-  useQuery: (options: { queryKey?: string[] }) =>
-    options.queryKey?.[0] === "spaces"
-      ? { data: spacesRef.current, isFetched: true }
-      : { data: membersRef.current, isFetched: true },
+  useQuery: () => ({ data: membersRef.current, isFetched: true }),
   useQueryClient: () => ({
     setQueryData: vi.fn(),
     getQueryData: vi.fn(() => []),
@@ -48,7 +38,10 @@ vi.mock("@multica/core/hooks", () => ({
 
 vi.mock("@multica/core/paths", () => ({
   paths: {
-    workspace: (slug: string) => ({ settings: () => `/${slug}/settings` }),
+    workspace: (slug: string) => ({
+      settingsSection: (scope: string, page: string) =>
+        `/${slug}/settings/${scope}/${page}`,
+    }),
   },
   useCurrentWorkspace: () => workspaceRef.current,
   useHasOnboarded: () => true,
@@ -68,33 +61,6 @@ vi.mock("@multica/core/workspace/queries", () => ({
 vi.mock("@multica/core/workspace/mutations", () => ({
   useLeaveWorkspace: () => ({ mutateAsync: vi.fn() }),
   useDeleteWorkspace: () => ({ mutateAsync: vi.fn() }),
-}));
-
-vi.mock("@multica/core/spaces/queries", () => ({
-  activeSpaceListOptions: () => ({ queryKey: ["spaces"], queryFn: vi.fn() }),
-  spaceKeys: { all: (wsId: string) => ["spaces", wsId] },
-}));
-
-vi.mock("../../spaces/components/space-picker", () => ({
-  SpacePicker: ({
-    spaceId,
-    onChange,
-    disabled,
-  }: {
-    spaceId: string | null;
-    onChange: (id: string) => void;
-    disabled?: boolean;
-  }) => (
-    <select
-      aria-label="Default space"
-      value={spaceId ?? ""}
-      onChange={(event) => onChange(event.target.value)}
-      disabled={disabled}
-    >
-      <option value="space-1">Default</option>
-      <option value="space-2">Other</option>
-    </select>
-  ),
 }));
 
 vi.mock("@multica/core/api", () => ({
@@ -152,10 +118,6 @@ describe("WorkspaceTab — workspace slug editing", () => {
       repos: [],
     };
     membersRef.current = [{ user_id: "user-1", role: "owner" }];
-    spacesRef.current = [
-      { id: "space-1", name: "Default", is_default: true },
-      { id: "space-2", name: "Other", is_default: false },
-    ];
     mockUpdateWorkspace.mockImplementation(
       async (
         _id: string,
@@ -232,23 +194,8 @@ describe("WorkspaceTab — workspace slug editing", () => {
       expect.objectContaining({ slug: "new-workspace" }),
     );
     expect(mockNavigationReplace).toHaveBeenCalledWith(
-      "/new-workspace/settings",
+      "/new-workspace/settings/workspace/general",
     );
-  });
-
-  it("saves the selected workspace default space", async () => {
-    const user = userEvent.setup();
-    render(<WorkspaceTab />, { wrapper: I18nWrapper });
-
-    await user.selectOptions(screen.getByLabelText("Default space"), "space-2");
-    await user.click(screen.getByRole("button", { name: /^Save$/ }));
-
-    await waitFor(() => {
-      expect(mockUpdateWorkspace).toHaveBeenCalledWith(
-        "workspace-1",
-        expect.objectContaining({ default_space_id: "space-2" }),
-      );
-    });
   });
 
   it("cancelling the confirm dialog does not save", async () => {
