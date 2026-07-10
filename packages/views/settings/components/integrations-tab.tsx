@@ -31,7 +31,7 @@ export function IntegrationsTab() {
   return (
     <div className="space-y-10">
       <section className="space-y-4">
-        <h2 className="text-sm font-semibold">GitHub</h2>
+        <h2 className="text-sm font-semibold">{t(($) => $.github.connection_title)}</h2>
         <GitHubTab />
       </section>
       <section className="space-y-4">
